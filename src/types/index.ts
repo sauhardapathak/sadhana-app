@@ -10,9 +10,8 @@ export type SadhanaItem = {
 };
 
 export type DailyProgress = {
-  date: string;           // ISO date string "YYYY-MM-DD"
+  date: string;           // ISO date string "YYYY-MM-DD" (local calendar day)
   completed: string[];    // ids of completed SadhanaItems
-  streakDay: number;
 };
 
 // ─── Goals (set by spiritual guide) ───────────────────────────────────────────
@@ -67,6 +66,36 @@ export type Achievement = {
   icon: string;           // Ionicons name
   unlockedAt?: string;    // ISO date; undefined = locked
   category: 'streak' | 'learning' | 'service' | 'sadhana' | 'milestone';
+};
+
+// ─── Settings / Logs / Quiz ───────────────────────────────────────────────────
+
+export type Settings = {
+  reminderEnabled: boolean;
+  reminderTime: string; // "HH:MM" 24-hour
+};
+
+/** Lowercase alias — the store contract refers to the settings object type. */
+export type settings = Settings;
+
+export type JapaState = {
+  date: string; // ISO date "YYYY-MM-DD" the rounds count belongs to
+  rounds: number;
+};
+
+export type MeditationEntry = {
+  date: string; // ISO date "YYYY-MM-DD"
+  minutes: number;
+};
+
+export type SevaEntry = {
+  date: string; // ISO date "YYYY-MM-DD"
+};
+
+export type ActiveQuiz = {
+  lessonId: string;
+  qIndex: number;
+  correct: number;
 };
 
 // ─── User / Profile ───────────────────────────────────────────────────────────
