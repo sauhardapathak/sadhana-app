@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# scratch / reference material (device screenshots, notes) — never commit
+/wip/
