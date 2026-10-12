@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SadhanaItem } from '../types';
-import { Colors, FontSize, Radius, Spacing } from '../constants/theme';
+import { useTheme, FontSize, Radius, Spacing } from '../constants/theme';
 
 const CATEGORY_ICONS: Record<SadhanaItem['category'], keyof typeof Ionicons.glyphMap> = {
   puja: 'flower-outline',
@@ -19,6 +19,7 @@ type Props = {
 };
 
 export function SadhanaCheckItem({ item, onToggle }: Props) {
+  const t = useTheme();
   return (
     <Pressable
       onPress={() => onToggle(item.id)}
@@ -28,19 +29,26 @@ export function SadhanaCheckItem({ item, onToggle }: Props) {
       accessibilityLabel={item.title}
     >
       {/* Icon */}
-      <View style={[styles.iconWrap, item.completed && styles.iconWrapDone]}>
+      <View
+        style={[
+          styles.iconWrap,
+          { backgroundColor: item.completed ? t.primaryStrong : t.surfaceAlt },
+        ]}
+      >
         <Ionicons
           name={CATEGORY_ICONS[item.category]}
           size={20}
-          color={item.completed ? Colors.surface : Colors.primary}
+          color={item.completed ? t.textInverse : t.primaryStrong}
         />
       </View>
 
       {/* Text */}
       <View style={styles.textWrap}>
-        <Text style={[styles.title, item.completed && styles.titleDone]}>{item.title}</Text>
+        <Text style={[styles.title, { color: item.completed ? t.textMuted : t.textPrimary }, item.completed && styles.titleDone]}>
+          {item.title}
+        </Text>
         {item.subtitle ? (
-          <Text style={styles.subtitle}>{item.subtitle}</Text>
+          <Text style={[styles.subtitle, { color: t.textSecondary }]}>{item.subtitle}</Text>
         ) : null}
       </View>
 
@@ -48,7 +56,7 @@ export function SadhanaCheckItem({ item, onToggle }: Props) {
       <Ionicons
         name={item.completed ? 'checkmark-circle' : 'ellipse-outline'}
         size={24}
-        color={item.completed ? Colors.success : Colors.border}
+        color={item.completed ? t.success : t.border}
       />
     </Pressable>
   );
@@ -66,24 +74,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.md,
-    backgroundColor: Colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapDone: { backgroundColor: Colors.primary },
   textWrap: { flex: 1 },
   title: {
     fontSize: FontSize.md,
-    color: Colors.textPrimary,
     fontWeight: '500',
   },
   titleDone: {
-    color: Colors.textMuted,
     textDecorationLine: 'line-through',
   },
   subtitle: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     marginTop: 2,
   },
 });

@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../../src/store/sadhanaStore';
 import { Card } from '../../src/components/Card';
-import { Colors, FontSize, Radius, Spacing } from '../../src/constants/theme';
+import { useTheme, FontSize, Radius, Spacing } from '../../src/constants/theme';
 import { Achievement } from '../../src/types';
 import { formatDate } from '../../src/utils/date';
 
@@ -23,10 +23,27 @@ const CATEGORY_LABELS: Record<Achievement['category'], string> = {
 
 export default function AchievementsScreen() {
   const { state } = useStore();
+  const t = useTheme();
   const { achievements, profile } = state;
 
   const unlocked = achievements.filter((a) => !!a.unlockedAt);
   const locked = achievements.filter((a) => !a.unlockedAt);
+
+  const styles = StyleSheet.create({
+    safe: { flex: 1, backgroundColor: t.background },
+    scroll: { padding: Spacing.md, paddingBottom: Spacing.xxl, gap: Spacing.md },
+    heading: { fontSize: FontSize.hero, fontWeight: '800', color: t.textPrimary },
+    sub: { fontSize: FontSize.md, color: t.textSecondary, lineHeight: 22 },
+
+    summaryCard: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+    summaryItem: { alignItems: 'center', flex: 1 },
+    summaryNumber: { fontSize: FontSize.xxl, fontWeight: '800', color: t.primary },
+    summaryLabel: { fontSize: FontSize.xs, color: t.textMuted, marginTop: 2 },
+    summaryDivider: { width: 1, height: 40, backgroundColor: t.divider },
+
+    section: { gap: Spacing.sm },
+    sectionTitle: { fontSize: FontSize.lg, fontWeight: '700', color: t.textPrimary },
+  });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -85,13 +102,38 @@ function AchievementCard({
   achievement: Achievement;
   locked?: boolean;
 }) {
+  const t = useTheme();
+
+  const styles = StyleSheet.create({
+    achCard: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+    achCardLocked: { opacity: 0.6 },
+    achIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: Radius.md,
+      backgroundColor: '#FFF8E1',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    achIconLocked: { backgroundColor: t.surfaceAlt },
+    achInfo: { flex: 1, gap: 4 },
+    achTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    achTitle: { fontSize: FontSize.md, fontWeight: '700', color: t.textPrimary },
+    achTitleLocked: { color: t.textMuted },
+    achCategory: { fontSize: FontSize.xs, color: t.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    achDesc: { fontSize: FontSize.sm, color: t.textSecondary },
+    achDescLocked: { color: t.textMuted },
+    achDate: { fontSize: FontSize.xs, color: t.primaryStrong, fontWeight: '600', marginTop: 2 },
+  });
+
   return (
     <Card style={[styles.achCard, locked ? styles.achCardLocked : undefined]}>
       <View style={[styles.achIcon, locked ? styles.achIconLocked : undefined]}>
         <Ionicons
           name={(achievement.icon as any) ?? 'star-outline'}
           size={26}
-          color={locked ? Colors.textMuted : Colors.gold}
+          color={locked ? t.textMuted : t.goldDeep}
         />
       </View>
       <View style={styles.achInfo}>
@@ -111,40 +153,3 @@ function AchievementCard({
     </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: Spacing.md, paddingBottom: Spacing.xxl, gap: Spacing.md },
-  heading: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary },
-  sub: { fontSize: FontSize.md, color: Colors.textSecondary, lineHeight: 22 },
-
-  summaryCard: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  summaryItem: { alignItems: 'center', flex: 1 },
-  summaryNumber: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.primary },
-  summaryLabel: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
-  summaryDivider: { width: 1, height: 40, backgroundColor: Colors.divider },
-
-  section: { gap: Spacing.sm },
-  sectionTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.textPrimary },
-
-  achCard: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
-  achCardLocked: { opacity: 0.6 },
-  achIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.md,
-    backgroundColor: '#FFF8E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  achIconLocked: { backgroundColor: Colors.surfaceAlt },
-  achInfo: { flex: 1, gap: 4 },
-  achTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  achTitle: { fontSize: FontSize.md, fontWeight: '700', color: Colors.textPrimary },
-  achTitleLocked: { color: Colors.textMuted },
-  achCategory: { fontSize: FontSize.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  achDesc: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  achDescLocked: { color: Colors.textMuted },
-  achDate: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: '600', marginTop: 2 },
-});

@@ -1,14 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { QuestionDifficulty } from '../types';
-import { Colors, FontSize, Radius, Spacing } from '../constants/theme';
-
-const COLORS: Record<QuestionDifficulty, { bg: string; text: string }> = {
-  easy: { bg: '#D4EDDA', text: Colors.success },
-  medium: { bg: '#FFF3CD', text: Colors.warning },
-  hard: { bg: '#F8D7DA', text: Colors.error },
-  extreme: { bg: '#3D0C02', text: '#FFD700' },
-};
+import { useTheme, FontSize, Radius, Spacing } from '../constants/theme';
 
 const LABELS: Record<QuestionDifficulty, string> = {
   easy: 'Easy',
@@ -20,6 +13,13 @@ const LABELS: Record<QuestionDifficulty, string> = {
 type Props = { difficulty: QuestionDifficulty };
 
 export function DifficultyBadge({ difficulty }: Props) {
+  const t = useTheme();
+  const COLORS: Record<QuestionDifficulty, { bg: string; text: string }> = {
+    easy: { bg: t.badgeEasyBg, text: t.badgeEasyText },
+    medium: { bg: t.badgeMediumBg, text: t.badgeMediumText },
+    hard: { bg: t.badgeHardBg, text: t.badgeHardText },
+    extreme: { bg: t.badgeExtremeBg, text: t.badgeExtremeText },
+  };
   const { bg, text } = COLORS[difficulty];
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>

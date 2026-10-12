@@ -2,7 +2,7 @@
  * Lesson Detail + Quiz Screen
  * Phases: content → quiz (easy → medium → hard → extreme) → results
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../../src/store/sadhanaStore';
 import { Card } from '../../src/components/Card';
 import { DifficultyBadge } from '../../src/components/DifficultyBadge';
-import { Colors, FontSize, Radius, Spacing } from '../../src/constants/theme';
+import { useTheme, FontSize, Radius, Spacing } from '../../src/constants/theme';
 import { QuizQuestion, QuestionDifficulty } from '../../src/types';
 
 const DIFFICULTY_ORDER: QuestionDifficulty[] = ['easy', 'medium', 'hard', 'extreme'];
@@ -27,10 +27,10 @@ type Phase = 'content' | 'quiz' | 'results';
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state, dispatch } = useStore();
+  const t = useTheme();
   const router = useRouter();
 
   const lesson = state.lessons.find((l) => l.id === id);
-  if (!lesson) return null;
 
   const [phase, setPhase] = useState<Phase>('content');
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -38,19 +38,131 @@ export default function LessonScreen() {
   const [revealed, setRevealed] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
 
-  // Questions sorted by difficulty
-  const questions = [...lesson.questions].sort(
-    (a, b) => DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty)
+  // Questions sorted by difficulty. useMemo (not inline) so the early return
+  // below never changes the hook order between renders.
+  const questions: QuizQuestion[] = useMemo(
+    () =>
+      [...(lesson?.questions ?? [])].sort(
+        (a, b) => DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty)
+      ),
+    [lesson]
   );
 
   const currentQ: QuizQuestion | undefined = questions[currentQIndex];
 
-  function handleStartQuiz() {
-    setPhase('quiz');
-    setCurrentQIndex(0);
+  const activeQuiz = state.activeQuiz;
+  const savedQuiz = activeQuiz?.lessonId === lesson?.id ? activeQuiz : null;
+
+  const styles = StyleSheet.create({
+    safe: { flex: 1, backgroundColor: t.background },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.divider,
+    },
+    topTitle: { flex: 1, fontSize: FontSize.md, fontWeight: '700', color: t.textPrimary, textAlign: 'center' },
+    scroll: { padding: Spacing.md, paddingBottom: Spacing.xxl, gap: Spacing.md },
+
+    contentTypeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    contentTypeLabel: { fontSize: FontSize.sm, color: t.textMuted },
+    categoryLabel: { fontSize: FontSize.sm, color: t.primaryStrong, fontWeight: '700', marginLeft: Spacing.sm },
+    lessonTitle: { fontSize: FontSize.xxl, fontWeight: '800', color: t.textPrimary },
+    bodyText: { fontSize: FontSize.md, color: t.textPrimary, lineHeight: 26 },
+    audioSub: { fontSize: FontSize.sm, color: t.textMuted },
+
+    resumeRow: { flexDirection: 'row', gap: Spacing.sm },
+    resumeBtn: {
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: t.primaryStrong,
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.sm,
+    },
+    resumeBtnText: { fontSize: FontSize.md, fontWeight: '700', color: t.textInverse },
+    restartBtn: {
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: t.surfaceAlt,
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.sm,
+    },
+    restartBtnText: { fontSize: FontSize.md, fontWeight: '700', color: t.textSecondary },
+
+    quizProgress: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    quizProgressText: { fontSize: FontSize.sm, color: t.textSecondary, fontWeight: '600' },
+    questionText: { fontSize: FontSize.xl, fontWeight: '700', color: t.textPrimary, lineHeight: 28 },
+    optionsWrap: { gap: Spacing.sm },
+    option: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      borderRadius: Radius.md,
+      padding: Spacing.md,
+      backgroundColor: t.surface,
+      borderWidth: 2,
+      borderColor: t.border,
+    },
+    optionSelected: { borderColor: t.primaryStrong, backgroundColor: '#FFF5ED' },
+    optionCorrect: { borderColor: t.success, backgroundColor: '#F0FFF4' },
+    optionWrong: { borderColor: t.error, backgroundColor: '#FFF5F5' },
+    optionDim: { borderColor: t.divider, backgroundColor: t.background, opacity: 0.6 },
+    optionLetter: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: t.surfaceAlt,
+      textAlign: 'center',
+      lineHeight: 24,
+      fontSize: FontSize.sm,
+      fontWeight: '700',
+      color: t.textSecondary,
+    },
+    optionText: { flex: 1, fontSize: FontSize.md, color: t.textPrimary },
+    optionTextSelected: { color: t.primaryStrong, fontWeight: '600' },
+    optionTextCorrect: { color: t.success, fontWeight: '600' },
+    optionTextWrong: { color: t.error, fontWeight: '600' },
+    optionTextDim: { color: t.textMuted },
+    explanationCard: { backgroundColor: t.surfaceAlt },
+    explanationHeading: { fontSize: FontSize.sm, fontWeight: '700', color: t.textSecondary, marginBottom: 4 },
+    explanationText: { fontSize: FontSize.md, color: t.textPrimary, lineHeight: 22 },
+
+    ctaButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      backgroundColor: t.primaryStrong,
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    ctaButtonDisabled: { opacity: 0.4 },
+    ctaButtonText: { fontSize: FontSize.lg, fontWeight: '700', color: t.textInverse },
+
+    resultsWrap: { alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
+    resultsScore: { fontSize: 56, fontWeight: '800', color: t.textPrimary },
+    resultsPercent: { fontSize: FontSize.xl, color: t.textSecondary, marginTop: -8 },
+    resultsMessage: { fontSize: FontSize.lg, color: t.textSecondary, textAlign: 'center', lineHeight: 24 },
+  });
+
+  // NOTE: this must stay AFTER all hooks — an early return above them breaks
+  // the Rules of Hooks and crashes when the id is invalid.
+  if (!lesson) return null;
+
+  function handleStartQuiz(resume = false) {
+    if (resume && savedQuiz) {
+      setCurrentQIndex(savedQuiz.qIndex);
+      setCorrectAnswers(savedQuiz.correct);
+    } else {
+      setCurrentQIndex(0);
+      setCorrectAnswers(0);
+    }
     setSelectedOption(null);
     setRevealed(false);
-    setCorrectAnswers(0);
+    setPhase('quiz');
   }
 
   function handleSelectOption(idx: number) {
@@ -59,27 +171,52 @@ export default function LessonScreen() {
   }
 
   function handleReveal() {
+    if (!lesson) return;
     if (selectedOption === null || !currentQ) {
       Alert.alert('Select an answer first.');
       return;
     }
     setRevealed(true);
-    if (selectedOption === currentQ.correctIndex) {
-      setCorrectAnswers((c) => c + 1);
+    const gained = selectedOption === currentQ.correctIndex ? 1 : 0;
+    const nextCorrect = correctAnswers + gained;
+    if (gained === 1) {
+      setCorrectAnswers(nextCorrect);
+      if (currentQ.difficulty === 'extreme') {
+        dispatch({ type: 'UNLOCK_ACHIEVEMENT', id: 'a5' });
+      }
     }
+    dispatch({
+      type: 'SAVE_QUIZ',
+      lessonId: lesson.id,
+      qIndex: currentQIndex,
+      correct: nextCorrect,
+    });
   }
 
   function handleNext() {
-    if (!lesson) return;
+    if (!lesson || questions.length === 0) return;
     if (currentQIndex < questions.length - 1) {
-      setCurrentQIndex((i) => i + 1);
+      const nextIndex = currentQIndex + 1;
+      dispatch({
+        type: 'SAVE_QUIZ',
+        lessonId: lesson.id,
+        qIndex: nextIndex,
+        correct: correctAnswers,
+      });
+      setCurrentQIndex(nextIndex);
       setSelectedOption(null);
       setRevealed(false);
     } else {
       const score = Math.round((correctAnswers / questions.length) * 100);
       dispatch({ type: 'COMPLETE_LESSON', id: lesson.id, score });
+      dispatch({ type: 'CLEAR_QUIZ' });
       setPhase('results');
     }
+  }
+
+  function handleBackToLessons() {
+    dispatch({ type: 'CLEAR_QUIZ' });
+    router.back();
   }
 
   function getOptionStyle(idx: number) {
@@ -105,7 +242,7 @@ export default function LessonScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={26} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={26} color={t.textPrimary} />
         </Pressable>
         <Text style={styles.topTitle} numberOfLines={1}>{lesson.title}</Text>
         <View style={{ width: 26 }} />
@@ -118,7 +255,7 @@ export default function LessonScreen() {
             <Ionicons
               name={lesson.contentType === 'reading' ? 'book-outline' : 'headset-outline'}
               size={16}
-              color={Colors.textMuted}
+              color={t.textMuted}
             />
             <Text style={styles.contentTypeLabel}>
               {lesson.contentType === 'reading' ? 'Reading' : 'Listening'}
@@ -127,22 +264,40 @@ export default function LessonScreen() {
           </View>
           <Text style={styles.lessonTitle}>{lesson.title}</Text>
 
-          {lesson.contentType === 'reading' && lesson.bodyText && (
+          {lesson.bodyText ? (
             <Text style={styles.bodyText}>{lesson.bodyText}</Text>
-          )}
+          ) : null}
 
-          {lesson.contentType === 'listening' && (
-            <Card style={styles.audioCard}>
-              <Ionicons name="musical-notes-outline" size={48} color={Colors.primary} />
-              <Text style={styles.audioLabel}>Audio player coming soon</Text>
-              <Text style={styles.audioSub}>Duration: {lesson.durationMin ?? '?'} min</Text>
-            </Card>
+          {lesson.questions.length > 0 ? (
+            <>
+              {savedQuiz && (
+                <View style={styles.resumeRow}>
+                  <Pressable
+                    style={styles.resumeBtn}
+                    onPress={() => handleStartQuiz(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Resume quiz at question ${savedQuiz.qIndex + 1}`}
+                  >
+                    <Text style={styles.resumeBtnText}>Resume (Q{savedQuiz.qIndex + 1})</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.restartBtn}
+                    onPress={() => handleStartQuiz(false)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Restart quiz"
+                  >
+                    <Text style={styles.restartBtnText}>Restart</Text>
+                  </Pressable>
+                </View>
+              )}
+              <Pressable style={styles.ctaButton} onPress={() => handleStartQuiz(false)}>
+                <Text style={styles.ctaButtonText}>Start Questions</Text>
+                <Ionicons name="arrow-forward" size={18} color={t.textInverse} />
+              </Pressable>
+            </>
+          ) : (
+            <Text style={styles.audioSub}>No questions for this lesson yet.</Text>
           )}
-
-          <Pressable style={styles.ctaButton} onPress={handleStartQuiz}>
-            <Text style={styles.ctaButtonText}>Start Questions</Text>
-            <Ionicons name="arrow-forward" size={18} color={Colors.surface} />
-          </Pressable>
         </ScrollView>
       )}
 
@@ -173,10 +328,10 @@ export default function LessonScreen() {
                 </Text>
                 <Text style={getOptionTextStyle(idx)}>{opt}</Text>
                 {revealed && idx === currentQ.correctIndex && (
-                  <Ionicons name="checkmark-circle" size={18} color={Colors.success} style={{ marginLeft: 'auto' }} />
+                  <Ionicons name="checkmark-circle" size={18} color={t.success} style={{ marginLeft: 'auto' }} />
                 )}
                 {revealed && idx === selectedOption && idx !== currentQ.correctIndex && (
-                  <Ionicons name="close-circle" size={18} color={Colors.error} style={{ marginLeft: 'auto' }} />
+                  <Ionicons name="close-circle" size={18} color={t.error} style={{ marginLeft: 'auto' }} />
                 )}
               </Pressable>
             ))}
@@ -203,7 +358,7 @@ export default function LessonScreen() {
               <Text style={styles.ctaButtonText}>
                 {currentQIndex < questions.length - 1 ? 'Next Question' : 'See Results'}
               </Text>
-              <Ionicons name="arrow-forward" size={18} color={Colors.surface} />
+              <Ionicons name="arrow-forward" size={18} color={t.textInverse} />
             </Pressable>
           )}
         </ScrollView>
@@ -215,13 +370,13 @@ export default function LessonScreen() {
           <Ionicons
             name={correctAnswers === questions.length ? 'trophy' : 'checkmark-circle'}
             size={64}
-            color={correctAnswers === questions.length ? Colors.gold : Colors.success}
+            color={correctAnswers === questions.length ? t.goldDeep : t.success}
           />
           <Text style={styles.resultsScore}>
             {correctAnswers} / {questions.length}
           </Text>
           <Text style={styles.resultsPercent}>
-            {Math.round((correctAnswers / questions.length) * 100)}%
+            {questions.length > 0 ? Math.round((correctAnswers / questions.length) * 100) : 0}%
           </Text>
           <Text style={styles.resultsMessage}>
             {correctAnswers === questions.length
@@ -230,8 +385,8 @@ export default function LessonScreen() {
               ? 'Good effort. Reflect and revisit the lesson.'
               : 'Keep studying. Every reading is a step forward.'}
           </Text>
-          <Pressable style={styles.ctaButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={18} color={Colors.surface} />
+          <Pressable style={styles.ctaButton} onPress={handleBackToLessons}>
+            <Ionicons name="arrow-back" size={18} color={t.textInverse} />
             <Text style={styles.ctaButtonText}>Back to Lessons</Text>
           </Pressable>
         </ScrollView>
@@ -239,82 +394,3 @@ export default function LessonScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  topTitle: { flex: 1, fontSize: FontSize.md, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center' },
-  scroll: { padding: Spacing.md, paddingBottom: Spacing.xxl, gap: Spacing.md },
-
-  contentTypeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  contentTypeLabel: { fontSize: FontSize.sm, color: Colors.textMuted },
-  categoryLabel: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: '700', marginLeft: Spacing.sm },
-  lessonTitle: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.textPrimary },
-  bodyText: { fontSize: FontSize.md, color: Colors.textPrimary, lineHeight: 26 },
-  audioCard: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
-  audioLabel: { fontSize: FontSize.lg, fontWeight: '600', color: Colors.textPrimary },
-  audioSub: { fontSize: FontSize.sm, color: Colors.textMuted },
-
-  quizProgress: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  quizProgressText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: '600' },
-  questionText: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary, lineHeight: 28 },
-  optionsWrap: { gap: Spacing.sm },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.border,
-  },
-  optionSelected: { borderColor: Colors.primary, backgroundColor: '#FFF5ED' },
-  optionCorrect: { borderColor: Colors.success, backgroundColor: '#F0FFF4' },
-  optionWrong: { borderColor: Colors.error, backgroundColor: '#FFF5F5' },
-  optionDim: { borderColor: Colors.divider, backgroundColor: Colors.background, opacity: 0.6 },
-  optionLetter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceAlt,
-    textAlign: 'center',
-    lineHeight: 24,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  optionText: { flex: 1, fontSize: FontSize.md, color: Colors.textPrimary },
-  optionTextSelected: { color: Colors.primary, fontWeight: '600' },
-  optionTextCorrect: { color: Colors.success, fontWeight: '600' },
-  optionTextWrong: { color: Colors.error, fontWeight: '600' },
-  optionTextDim: { color: Colors.textMuted },
-  explanationCard: { backgroundColor: Colors.surfaceAlt },
-  explanationHeading: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.textSecondary, marginBottom: 4 },
-  explanationText: { fontSize: FontSize.md, color: Colors.textPrimary, lineHeight: 22 },
-
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  ctaButtonDisabled: { opacity: 0.4 },
-  ctaButtonText: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.surface },
-
-  resultsWrap: { alignItems: 'center', justifyContent: 'center', flexGrow: 1 },
-  resultsScore: { fontSize: 56, fontWeight: '800', color: Colors.textPrimary },
-  resultsPercent: { fontSize: FontSize.xl, color: Colors.textSecondary, marginTop: -8 },
-  resultsMessage: { fontSize: FontSize.lg, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 },
-});
