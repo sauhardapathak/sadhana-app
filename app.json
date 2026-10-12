@@ -41,9 +41,11 @@
       "policy": "appVersion"
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "YOUR-PROJECT-ID"
+        "projectId": "f3fe79bf-496c-4ecc-8ebf-731793b0f063"
       }
-    }
+    },
+    "owner": "sauharda1"
   }
 }
