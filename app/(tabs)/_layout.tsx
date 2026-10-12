@@ -1,20 +1,25 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, FontSize } from '../../src/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FontSize, useTheme } from '../../src/constants/theme';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const t = useTheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.tabActive,
-        tabBarInactiveTintColor: Colors.tabInactive,
+        tabBarActiveTintColor: t.tabActive,
+        tabBarInactiveTintColor: t.tabInactive,
         tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.divider,
+          backgroundColor: t.surface,
+          borderTopColor: t.divider,
           borderTopWidth: 1,
-          paddingBottom: 4,
-          height: 60,
+          // Fixed heights cut into the home indicator on notched devices —
+          // grow with the bottom safe-area inset instead.
+          height: 60 + insets.bottom,
+          paddingBottom: 4 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: FontSize.xs,
